@@ -69,15 +69,21 @@ class EventPlotter:
         # Validate y_scale_mode
         valid_modes = ["raw", "percent", "snr"]
         if self.y_scale_mode not in valid_modes:
-            logger.warning(f"Invalid y_scale_mode '{self.y_scale_mode}'. Using 'raw'. Valid options: {valid_modes}")
+            logger.warning(
+                f"Invalid y_scale_mode '{self.y_scale_mode}'. Using 'raw'. Valid options: {valid_modes}"
+            )
             self.y_scale_mode = "raw"
 
         # Warn if scaling mode requires data that's not available
         if self.y_scale_mode == "percent" and self.bg_clean is None:
-            logger.warning("y_scale_mode='percent' requires bg_clean data. Falling back to 'raw' mode.")
+            logger.warning(
+                "y_scale_mode='percent' requires bg_clean data. Falling back to 'raw' mode."
+            )
             self.y_scale_mode = "raw"
         elif self.y_scale_mode == "snr" and self.global_noise is None:
-            logger.warning("y_scale_mode='snr' requires global_noise data. Falling back to 'raw' mode.")
+            logger.warning(
+                "y_scale_mode='snr' requires global_noise data. Falling back to 'raw' mode."
+            )
             self.y_scale_mode = "raw"
 
         self.fig: Optional[matplotlib.figure.Figure] = None
@@ -94,7 +100,6 @@ class EventPlotter:
         if self.fig is not None:
             self.fig.savefig(filepath)
             logger.info(f"EventPlotter figure saved to {filepath}")
-
 
     def _extract_events_from_regions(self) -> Optional[np.ndarray]:
         """
@@ -132,7 +137,9 @@ class EventPlotter:
         # Concatenate all region arrays
         return np.vstack(all_events)
 
-    def _scale_y_data(self, y_data: np.ndarray, bg_data: Optional[np.ndarray], mask: np.ndarray) -> Tuple[np.ndarray, str]:
+    def _scale_y_data(
+        self, y_data: np.ndarray, bg_data: Optional[np.ndarray], mask: np.ndarray
+    ) -> Tuple[np.ndarray, str]:
         """
         Scale y-data according to the current scaling mode.
 
@@ -186,7 +193,9 @@ class EventPlotter:
         else:
             return bg_data
 
-    def _scale_noise_ribbon(self, bg_data: np.ndarray, noise_level: np.float32) -> Tuple[np.ndarray, np.ndarray]:
+    def _scale_noise_ribbon(
+        self, bg_data: np.ndarray, noise_level: np.float32
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Scale noise ribbon bounds according to the current scaling mode.
 
@@ -259,10 +268,12 @@ class EventPlotter:
 
         # Determine offset display parameters
         time_span_raw = plot_end_time - plot_start_time
-        event_time_unit, display_scale, offset_time_raw, offset_unit = _determine_offset_display_params(
-            (plot_start_time, plot_end_time), time_span_raw
+        event_time_unit, display_scale, offset_time_raw, offset_unit = (
+            _determine_offset_display_params(
+                (plot_start_time, plot_end_time), time_span_raw
+            )
         )
-        
+
         # Scale for display using the display_scale from offset params
         t_event_display = t_event_raw_relative * display_scale
 
@@ -293,7 +304,9 @@ class EventPlotter:
             )
             if self.global_noise is not None:
                 # Plot noise ribbon around the background
-                noise_lower, noise_upper = self._scale_noise_ribbon(self.bg_clean[mask], self.global_noise)
+                noise_lower, noise_upper = self._scale_noise_ribbon(
+                    self.bg_clean[mask], self.global_noise
+                )
                 ax_ev.fill_between(
                     t_event_display,
                     noise_lower,
@@ -317,7 +330,7 @@ class EventPlotter:
                 offset_scale = 1e6
             elif offset_unit == "ns":
                 offset_scale = 1e9
-            
+
             offset_display = offset_time_raw * offset_scale
             ax_ev.set_xlabel(
                 f"Time ({event_time_unit}) + {offset_display:.3g} {offset_unit}"
@@ -374,7 +387,7 @@ class EventPlotter:
 
         self.fig.suptitle(
             f"{clean_name} - Events 1-{n_events} (of {len(self.events)} total)",
-            fontsize=12
+            fontsize=12,
         )
 
         # Flatten axes for easier indexing
@@ -420,10 +433,12 @@ class EventPlotter:
 
             # Determine offset display parameters for this event
             time_span_raw = plot_end_time - plot_start_time
-            event_time_unit, display_scale, offset_time_raw, offset_unit = _determine_offset_display_params(
-                (plot_start_time, plot_end_time), time_span_raw
+            event_time_unit, display_scale, offset_time_raw, offset_unit = (
+                _determine_offset_display_params(
+                    (plot_start_time, plot_end_time), time_span_raw
+                )
             )
-            
+
             # Scale for display using the display_scale from offset params
             t_event_display = t_event_raw_relative * display_scale
 
@@ -456,7 +471,9 @@ class EventPlotter:
                 )
                 if self.global_noise is not None:
                     # Plot noise ribbon around the background
-                    noise_lower, noise_upper = self._scale_noise_ribbon(self.bg_clean[mask], self.global_noise)
+                    noise_lower, noise_upper = self._scale_noise_ribbon(
+                        self.bg_clean[mask], self.global_noise
+                    )
                     ax.fill_between(
                         t_event_display,
                         noise_lower,
@@ -483,7 +500,7 @@ class EventPlotter:
                     offset_scale = 1e6
                 elif offset_unit == "ns":
                     offset_scale = 1e9
-                
+
                 offset_display = offset_time_raw * offset_scale
                 ax.set_xlabel(
                     f"Time ({event_time_unit}) + {offset_display:.3g} {offset_unit}",

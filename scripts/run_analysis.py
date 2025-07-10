@@ -19,7 +19,7 @@ CONFIG = {
     "YSCALE_MODE": "snr",  # y-scale mode for event plotter: 'snr', 'percent' or 'raw'
     "FILTER_TYPE": "gaussian",  # Filter type: "savgol", "gaussian", "moving_average", "median"
     "FILTER_ORDER": 3,  # Order of the savgol filter (only used for filter_type="savgol")
-    #---
+    # ---
     "DATA_PATH": "../data/20250702-bsa/",
     "MEASUREMENTS": [
         {
@@ -40,8 +40,6 @@ CONFIG = {
 }
 
 
-
-
 def main() -> None:
     """
     Main function to process all measurements.
@@ -53,11 +51,11 @@ def main() -> None:
         # Merge global config with measurement-specific overrides
         merged_config = CONFIG.copy()
         merged_config.update(measurement)
-        
+
         # Extract parameters for process_file
         name = merged_config["data"]
         sidecar = merged_config.get("sidecar")
-        
+
         if sidecar:
             params = get_waveform_params(
                 name, data_path=merged_config["DATA_PATH"], xml_filename=sidecar
@@ -66,7 +64,7 @@ def main() -> None:
         else:
             params = get_waveform_params(name, data_path=merged_config["DATA_PATH"])
             sampling_interval = params["sampling_interval"]
-        
+
         # Call with explicit parameters
         process_file(
             name=name,

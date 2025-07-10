@@ -24,30 +24,30 @@ from pyosc.waveform.io import rd
 def _create_event_mask_numba(t: np.ndarray, events: np.ndarray) -> np.ndarray:
     """
     Create a boolean mask to exclude event regions using numba for speed.
-    
+
     Parameters
     ----------
     t : np.ndarray
         Time array.
     events : np.ndarray
         Events array with shape (n_events, 2) where each row is [t_start, t_end].
-    
+
     Returns
     -------
     np.ndarray
         Boolean mask where True means keep the sample, False means exclude.
     """
     mask = np.ones(len(t), dtype=np.bool_)
-    
+
     for i in range(len(events)):
         t_start = events[i, 0]
         t_end = events[i, 1]
-        
+
         # Find indices where time is within event bounds
         for j in range(len(t)):
             if t_start <= t[j] < t_end:
                 mask[j] = False
-    
+
     return mask
 
 
@@ -209,7 +209,7 @@ def calculate_initial_background(
      4 Reserve Savitzky-Golay for final high-quality analysis of interesting datasets
     """
     logger.info(f"Calculating initial background using {filter_type} filter")
-    
+
     if filter_type == "savgol":
         bg_initial = savgol_filter(x, smooth_n, 3).astype(np.float32)
     elif filter_type == "gaussian":
@@ -217,12 +217,18 @@ def calculate_initial_background(
         bg_initial = gaussian_filter1d(x.astype(np.float64), sigma).astype(np.float32)
     elif filter_type == "moving_average":
         # Use scipy's uniform_filter1d for proper edge handling
-        bg_initial = uniform_filter1d(x.astype(np.float64), size=smooth_n, mode='nearest').astype(np.float32)
+        bg_initial = uniform_filter1d(
+            x.astype(np.float64), size=smooth_n, mode="nearest"
+        ).astype(np.float32)
     elif filter_type == "median":
-        bg_initial = median_filter(x.astype(np.float64), size=smooth_n).astype(np.float32)
+        bg_initial = median_filter(x.astype(np.float64), size=smooth_n).astype(
+            np.float32
+        )
     else:
-        raise ValueError(f"Unknown filter_type: {filter_type}. Choose from 'savgol', 'gaussian', 'moving_average', 'median'")
-    
+        raise ValueError(
+            f"Unknown filter_type: {filter_type}. Choose from 'savgol', 'gaussian', 'moving_average', 'median'"
+        )
+
     logger.debug(
         f"Initial background: mean={np.mean(bg_initial):.3g}, std={np.std(bg_initial):.3g}"
     )
@@ -398,27 +404,41 @@ def calculate_clean_background(
             interp_start = time.time()
             x_interp = np.interp(t, t_masked, x_masked)
             interp_end = time.time()
-        
+
         filter_start = time.time()
         if filter_type == "savgol":
-            bg_clean = savgol_filter(x_interp, smooth_n, filter_order).astype(np.float32)
+            bg_clean = savgol_filter(x_interp, smooth_n, filter_order).astype(
+                np.float32
+            )
         elif filter_type == "gaussian":
             sigma = smooth_n / 6.0  # Convert window to sigma (6-sigma rule)
-            bg_clean = gaussian_filter1d(x_interp.astype(np.float64), sigma).astype(np.float32)
+            bg_clean = gaussian_filter1d(x_interp.astype(np.float64), sigma).astype(
+                np.float32
+            )
         elif filter_type == "moving_average":
-            bg_clean = uniform_filter1d(x_interp.astype(np.float64), size=smooth_n, mode='nearest').astype(np.float32)
+            bg_clean = uniform_filter1d(
+                x_interp.astype(np.float64), size=smooth_n, mode="nearest"
+            ).astype(np.float32)
         elif filter_type == "median":
-            bg_clean = median_filter(x_interp.astype(np.float64), size=smooth_n).astype(np.float32)
+            bg_clean = median_filter(x_interp.astype(np.float64), size=smooth_n).astype(
+                np.float32
+            )
         else:
-            raise ValueError(f"Unknown filter_type: {filter_type}. Choose from 'savgol', 'gaussian', 'moving_average', 'median'")
+            raise ValueError(
+                f"Unknown filter_type: {filter_type}. Choose from 'savgol', 'gaussian', 'moving_average', 'median'"
+            )
         filter_end = time.time()
-        
-        logger.success(f"Timing: mask={mask_time-start_time:.3f}s, interp={interp_end-interp_start:.3f}s, filter={filter_end-filter_start:.3f}s")
+
+        logger.success(
+            f"Timing: mask={mask_time - start_time:.3f}s, interp={interp_end - interp_start:.3f}s, filter={filter_end - filter_start:.3f}s"
+        )
         logger.debug(
             f"Clean background: mean={np.mean(bg_clean):.3g}, std={np.std(bg_clean):.3g}"
         )
     else:
-        logger.debug("Insufficient unmasked samples for clean background - using initial")
+        logger.debug(
+            "Insufficient unmasked samples for clean background - using initial"
+        )
         bg_clean = bg_initial
 
     return bg_clean
@@ -838,7 +858,9 @@ def process_file(
     )
 
     # Stage 4: Clean Background Calculation
-    bg_clean = calculate_clean_background(t, x, events_initial, smooth_n, bg_initial, filter_type, filter_order)
+    bg_clean = calculate_clean_background(
+        t, x, events_initial, smooth_n, bg_initial, filter_type, filter_order
+    )
 
     # Analyze thresholds
     detection_threshold, keep_threshold = analyze_thresholds(

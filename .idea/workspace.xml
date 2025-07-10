@@ -4,11 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e6b2dfb4-1b40-4da3-90bc-a2ef42f80586" name="Changes" comment=".">
-      <change beforePath="$PROJECT_DIR$/scripts/run_analysis.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/run_analysis.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/run_analysis03.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/run_analysis03.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/pyosc/waveform/analysis.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/pyosc/waveform/analysis.py" afterDir="false" />
-    </list>
+    <list default="true" id="e6b2dfb4-1b40-4da3-90bc-a2ef42f80586" name="Changes" comment="." />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -67,7 +63,7 @@
       <workItem from="1751607703813" duration="1073000" />
       <workItem from="1751608812665" duration="67309000" />
       <workItem from="1752018273156" duration="10881000" />
-      <workItem from="1752036597212" duration="16831000" />
+      <workItem from="1752036597212" duration="17288000" />
     </task>
     <task id="LOCAL-00001" summary=".">
       <option name="closed" value="true" />

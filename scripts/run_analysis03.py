@@ -19,7 +19,7 @@ CONFIG = {
     "YSCALE_MODE": "snr",  # y-scale mode for event plotter: 'snr', 'percent' or 'raw'
     "FILTER_TYPE": "gaussian",  # Filter type: "savgol", "gaussian", "moving_average", "median"
     "FILTER_ORDER": 3,  # Order of the savgol filter for smoothing
-    #---
+    # ---
     "DATA_PATH": "../data/20250703-bsa/",
     "MEASUREMENTS": [
         {
@@ -34,7 +34,6 @@ CONFIG = {
             "data": "RefCurve_2025-07-03_5_015243.Wfm.bin",
             "crop": [100, -1],
         },
-
     ],
 }
 
