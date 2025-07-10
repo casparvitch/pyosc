@@ -1,0 +1,17 @@
+pyproject.toml
+src/pyosc/__init__.py
+src/pyosc.egg-info/PKG-INFO
+src/pyosc.egg-info/SOURCES.txt
+src/pyosc.egg-info/dependency_links.txt
+src/pyosc.egg-info/requires.txt
+src/pyosc.egg-info/top_level.txt
+src/pyosc/event_detection/__init__.py
+src/pyosc/event_detection/event_detector.py
+src/pyosc/osclib/__init__.py
+src/pyosc/osclib/coordinate_manager.py
+src/pyosc/osclib/decimation_manager.py
+src/pyosc/osclib/display_state.py
+src/pyosc/osclib/plot_constants.py
+src/pyosc/osclib/time_utils.py
+src/pyosc/osclib/waveform_manager.py
+src/pyosc/waveform_io/__init__.py
