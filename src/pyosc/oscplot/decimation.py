@@ -301,17 +301,16 @@ class DecimationManager:
         if use_envelope and len(t) <= max_points and return_envelope_min_max:
             return t, x, x, x  # x,x for min/max when no decimation
 
-        # Determine step size for decimation
-        # This logic applies to both use_envelope=True (for envelope) and use_envelope=False (for mean decimation)
-        if (
-            use_envelope
-            and envelope_window_samples is not None
-            and envelope_window_samples > 1
-        ):
-            min_step = max(1, envelope_window_samples // 4)
-            step = max(min_step, len(t) // max_points)
-        else:
-            step = max(1, len(t) // max_points)
+        # Calculate step size for decimation based on max_points
+        step = max(1, len(t) // max_points)
+        
+        # For envelope mode, calculate adaptive envelope window based on data density
+        adaptive_envelope_window = None
+        if use_envelope and len(t) > max_points:
+            # Calculate envelope window based on how much we're decimating
+            # This ensures envelope resolution matches display capability
+            adaptive_envelope_window = max(1, step // 2)  # Half the step size for smoother envelope
+            logger.debug(f"Calculated adaptive envelope window: {adaptive_envelope_window} samples (step={step})")
 
         # Ensure step is not zero, and calculate number of bins
         if step == 0:  # Should not happen with max(1, ...) but as a safeguard
@@ -335,25 +334,25 @@ class DecimationManager:
         x_max_envelope: Optional[np.ndarray] = None
 
         if use_envelope:  # This block handles the decimation logic (mean or envelope)
-            if envelope_window_samples is not None and envelope_window_samples > 1:
+            if adaptive_envelope_window is not None and adaptive_envelope_window > 1:
                 logger.debug(
-                    f"Using high-resolution envelope with window size {envelope_window_samples} samples"
+                    f"Using adaptive high-resolution envelope with window size {adaptive_envelope_window} samples"
                 )
 
-                # Use Numba-optimized high-resolution envelope decimation
+                # Use Numba-optimized high-resolution envelope decimation with adaptive window
                 x_decimated, x_min_envelope, x_max_envelope = (
                     _decimate_envelope_highres_numba(
                         t_contiguous,
                         x_contiguous,
                         step,
                         n_bins,
-                        envelope_window_samples,
+                        adaptive_envelope_window,
                     )
                 )
 
                 envelope_thickness = np.mean(x_max_envelope - x_min_envelope)
                 logger.debug(
-                    f"High-res envelope thickness: mean={envelope_thickness:.3g}, min={np.min(x_max_envelope - x_min_envelope):.3g}, max={np.max(x_max_envelope - x_min_envelope):.3g}"
+                    f"Adaptive envelope thickness: mean={envelope_thickness:.3g}, min={np.min(x_max_envelope - x_min_envelope):.3g}, max={np.max(x_max_envelope - x_min_envelope):.3g}"
                 )
             else:
                 logger.debug("Using standard bin-based envelope")
@@ -386,7 +385,7 @@ class DecimationManager:
         t: np.ndarray,
         x: np.ndarray,
         max_points: int,
-        envelope_window_samples: Optional[int] = None,
+        envelope_window_samples: Optional[int] = None,  # This parameter is now ignored
     ) -> None:
         """
         Pre-calculate decimated envelope data for the full dataset.
@@ -425,12 +424,13 @@ class DecimationManager:
         )
         # Perform the decimation using the _decimate_data method
         # We force use_envelope=True here for pre-decimation to capture min/max
+        # envelope_window_samples is now calculated automatically based on max_points
         t_decimated, x_decimated, x_min, x_max = self._decimate_data(
             t,
             x,
             max_points=max_points,
             use_envelope=True,  # Always pre-decimate with envelope
-            envelope_window_samples=envelope_window_samples,
+            envelope_window_samples=None,  # Let _decimate_data calculate adaptive window
             return_envelope_min_max=True,  # Pre-decimation always stores min/max
         )
 
@@ -454,7 +454,7 @@ class DecimationManager:
         max_points: int,
         use_envelope: bool = False,
         data_id: Optional[int] = None,  # Changed from trace_id to data_id
-        envelope_window_samples: Optional[int] = None,
+        envelope_window_samples: Optional[int] = None,  # This parameter is now ignored
         mode_switch_threshold: Optional[
             float
         ] = None,  # New parameter for mode switching
@@ -640,13 +640,13 @@ class DecimationManager:
             )
 
         # Use unified decimation approach
-        # If use_envelope is False, _decimate_data will now return raw data directly
+        # envelope_window_samples is now calculated automatically based on max_points and data density
         result = self._decimate_data(
             t_view,
             x_view,
-            max_points=max_points,  # max_points is still passed but ignored if not use_envelope
+            max_points=max_points,
             use_envelope=use_envelope,  # Use requested envelope mode for dynamic decimation
-            envelope_window_samples=envelope_window_samples,
+            envelope_window_samples=None,  # Let _decimate_data calculate adaptive window
             return_envelope_min_max=return_envelope_min_max,  # Pass through
         )
 

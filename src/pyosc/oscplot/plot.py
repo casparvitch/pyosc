@@ -93,8 +93,9 @@ class OscilloscopePlot:
         region_zorder : int, default=-5
             Z-order for region highlight fills (lower means further back).
         envelope_window_samples : Optional[int], default=None
-            Window size in samples for high-resolution envelope calculation.
-            If None, uses simple binning approach for envelope mode.
+            DEPRECATED: Window size in samples for envelope calculation.
+            Envelope window is now calculated automatically based on max_plot_points and zoom level.
+            This parameter is ignored but kept for backward compatibility.
         """
         # Store styling parameters directly as instance attributes
         self.max_plot_points = max_plot_points
@@ -110,7 +111,10 @@ class OscilloscopePlot:
         self.envelope_alpha = envelope_alpha
         self.region_alpha = region_alpha
         self.region_zorder = region_zorder
-        self.envelope_window_samples = envelope_window_samples
+        # envelope_window_samples is now deprecated - envelope window is calculated automatically
+        # Keep the parameter for backward compatibility but don't use it
+        if envelope_window_samples is not None:
+            logger.warning("envelope_window_samples parameter is deprecated. Envelope window is now calculated automatically based on zoom level.")
 
         # Initialize managers
         self.data = TimeSeriesDataManager(t, x, name, trace_colors)
@@ -123,7 +127,7 @@ class OscilloscopePlot:
                 t=self.data.t_arrays[i],
                 x=self.data.x_arrays[i],
                 max_points=self.max_plot_points,
-                envelope_window_samples=self.envelope_window_samples,
+                envelope_window_samples=None,  # Envelope window calculated automatically
             )
 
         # Initialize display state using the first trace's time array
@@ -282,7 +286,7 @@ class OscilloscopePlot:
             t=t_array,
             x=data_array,
             max_points=self.max_plot_points,
-            envelope_window_samples=self.envelope_window_samples,
+            envelope_window_samples=None,  # Envelope window calculated automatically
         )
 
         # Store line definition with raw data and its assigned ID
@@ -380,7 +384,7 @@ class OscilloscopePlot:
             t=np.asarray(t, dtype=np.float32),
             x=center_data,
             max_points=self.max_plot_points,
-            envelope_window_samples=self.envelope_window_samples,
+            envelope_window_samples=None,  # Envelope window calculated automatically
         )
 
         # Store ribbon definition
@@ -479,7 +483,7 @@ class OscilloscopePlot:
             t=t_raw,
             x=avg_data,  # Pass average for decimation
             max_points=self.max_plot_points,
-            envelope_window_samples=self.envelope_window_samples,
+            envelope_window_samples=None,  # Envelope window calculated automatically
         )
 
         # Store envelope definition
@@ -760,7 +764,7 @@ class OscilloscopePlot:
                     data_id=line_def[
                         "id"
                     ],  # Pass the custom line's ID for pre-decimated data lookup
-                    envelope_window_samples=self.envelope_window_samples,  # Pass envelope window for high-res envelope
+                    envelope_window_samples=None,  # Envelope window calculated automatically
                     mode_switch_threshold=self.mode_switch_threshold,  # Pass mode switch threshold
                     return_envelope_min_max=False,  # Custom lines never return min/max envelope
                 )
@@ -824,7 +828,7 @@ class OscilloscopePlot:
                         "id"
                     ],  # Pass the custom ribbon's ID for pre-decimated data lookup
                     return_envelope_min_max=True,  # Ribbons always need min/max to draw fill
-                    envelope_window_samples=self.envelope_window_samples,
+                    envelope_window_samples=None,  # Envelope window calculated automatically
                     mode_switch_threshold=self.mode_switch_threshold,
                 )
 
@@ -916,7 +920,7 @@ class OscilloscopePlot:
                                 "id"
                             ],  # Pass the custom envelope's ID for pre-decimated data lookup
                             return_envelope_min_max=True,  # Custom envelopes always need min/max to draw fill
-                            envelope_window_samples=self.envelope_window_samples,
+                            envelope_window_samples=None,  # Envelope window calculated automatically
                             mode_switch_threshold=self.mode_switch_threshold,
                         )
                     )
@@ -939,7 +943,7 @@ class OscilloscopePlot:
                             use_envelope=True,
                             data_id=None,  # No pre-decimated data available
                             return_envelope_min_max=True,
-                            envelope_window_samples=self.envelope_window_samples,
+                            envelope_window_samples=None,  # Envelope window calculated automatically
                             mode_switch_threshold=self.mode_switch_threshold,
                         )
                     )
@@ -1366,8 +1370,8 @@ class OscilloscopePlot:
                     self.max_plot_points,
                     view_params["use_envelope"],
                     trace_idx,  # Pass trace_id to use pre-decimated data
-                    self.envelope_window_samples,
-                    self.mode_switch_threshold,  # Pass mode switch threshold
+                    envelope_window_samples=None,  # Envelope window calculated automatically
+                    mode_switch_threshold=self.mode_switch_threshold,  # Pass mode switch threshold
                     return_envelope_min_max=True,  # Main signal always returns envelope min/max if use_envelope is True
                 )
 

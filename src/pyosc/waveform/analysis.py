@@ -699,7 +699,7 @@ def create_oscilloscope_plot(
         name=plot_name,
         max_plot_points=max_plot_points,
         mode_switch_threshold=envelope_mode_limit,
-        envelope_window_samples=smooth_n,
+        envelope_window_samples=None,  # Envelope window now calculated automatically based on zoom
     )
 
     plot.add_line(
