@@ -10,7 +10,7 @@ from loguru import logger
 def get_waveform_params(
     bin_filename: str,
     data_path: Optional[str] = None,
-    xml_filename: Optional[str] = None,
+    xml_filename: Optional[str] = None,  # the header file
 ) -> Dict[str, Any]:
     """
     Parse XML sidecar file to extract waveform parameters.
@@ -90,6 +90,8 @@ def get_waveform_params(
 
         # Track which parameters we found for validation
         found_params = set()
+        signal_resolution = None
+        resolution = None
 
         for prop in root.iter("Prop"):
             if prop.attrib is None:
@@ -106,14 +108,18 @@ def get_waveform_params(
                 continue
 
             try:
-                if name == "SignalResolution":
+                if name == "Resolution":
                     params["sampling_interval"] = float(value)
                     found_resolution = True
                     found_params.add("SignalResolution")
-                elif name == "Resolution" and params["sampling_interval"] is None:
+                    resolution = float(value)
+                elif name == "SignalResolution" and params["sampling_interval"] is None:
                     params["sampling_interval"] = float(value)
                     found_resolution = True
                     found_params.add("Resolution")
+                    signal_resolution = float(value)
+                elif name == "SignalResolution":
+                    signal_resolution = float(value)
                 elif name == "VerticalScale":
                     params["vertical_scale"] = float(value)
                     found_params.add("VerticalScale")
@@ -154,9 +160,18 @@ def get_waveform_params(
         # Validate critical parameters
         if not found_resolution:
             warn(
-                "Neither 'SignalResolution' nor 'Resolution' found in XML. "
+                "Neither 'Resolution' nor 'SignalResolution' found in XML. "
                 + "Using default sampling_interval=None. "
                 + "Please provide a value or check your XML."
+            )
+        if (
+            "SignalResolution" in found_params
+            and "Resolution" in found_params
+            and not np.isclose(signal_resolution, resolution, rtol=1e-2, atol=1e-9)
+        ):
+            logger.warning(
+                f"FYI: 'Resolution' ({resolution}) != SignalResolution' ({signal_resolution}) found in {xml_path}. "
+                f"Using 'Resolution' ({signal_resolution}). Diff: {abs(signal_resolution - resolution)}"
             )
 
         # Log what we found for debugging
