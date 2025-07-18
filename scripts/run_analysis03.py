@@ -77,7 +77,7 @@ def main() -> None:
             sidecar=sidecar,
             crop=merged_config.get("crop"),
             yscale_mode=merged_config.get("YSCALE_MODE", "snr"),
-            show_plots=False,
+            show_plots=True,
             filter_type=merged_config.get("FILTER_TYPE", "gaussian"),
             filter_order=merged_config.get("FILTER_ORDER", 2),
         )

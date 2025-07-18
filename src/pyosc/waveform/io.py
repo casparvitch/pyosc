@@ -329,7 +329,7 @@ def rd(
             f"The file '{fp}' was not found. "
             + "Please ensure the file is in the correct directory."
         )
-    x = x.astype(np.float32) # NB: data is already in physical units (V)
+    # x = x.astype(np.float32) # NB: data is already in physical units (V)
 
     # Use np.linspace for more robust time array generation
     num_points = len(x)

@@ -170,7 +170,7 @@ def load_data(
     Tuple[np.ndarray, np.ndarray]
         Time and signal arrays.
     """
-    logger.info(f"Loading data from {name}")
+    logger.success(f"Loading data from {name}")
     t, x = rd(
         name,
         sampling_interval,
