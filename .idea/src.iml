@@ -5,6 +5,8 @@
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.aider.tags.cache.v4" />
       <excludeFolder url="file://$MODULE_DIR$/venv" />
+      <excludeFolder url="file://$MODULE_DIR$/src/oscilloscope_analyzer.egg-info" />
+      <excludeFolder url="file://$MODULE_DIR$/src/pyosc.egg-info" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.13.5 WSL (openSUSE-Tumbleweed): (/home/samsc/proj/hycav/src/venv/bin/python3)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
