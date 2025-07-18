@@ -6,33 +6,46 @@ from pyosc.waveform import configure_logging, get_waveform_params, process_file
 
 # --- User configuration dictionary ---
 CONFIG = {
-    "SMOOTH_WIN_T": 50e-6,  # smoothing window in seconds (set to None to use frequency)
+    "SMOOTH_WIN_T": 20e-3,  # smoothing window in seconds (set to None to use frequency)
     "SMOOTH_WIN_F": None,  # smoothing window in Hz (set to None to use time)
-    "DETECTION_SNR": 4,  # point-by-point detection threshold, <MIN_EVENT_KEEP_SNR
-    "MIN_EVENT_KEEP_SNR": 6,  # min event (max-)amplitude in multiples of global noise
+    "DETECTION_SNR": 3,  # point-by-point detection threshold, <MIN_EVENT_KEEP_SNR
+    "MIN_EVENT_KEEP_SNR": 5,  # min event (max-)amplitude in multiples of global noise
     "MIN_EVENT_T": 0.75e-6,  # minimum event duration (seconds)
     "WIDEN_FRAC": 10,  # fraction of event length to widen detected events
-    "SIGNAL_POLARITY": -1,  # Signal polarity: -1 for negative events (below background), +1 for positive events (above background)
-    "LOG_LEVEL": "INFO",  # logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+    "SIGNAL_POLARITY": 1,  # Signal polarity: -1 for negative events (below background), +1 for positive events (above background)
+    "LOG_LEVEL": "SUCCESS",  # logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL
     "MAX_PLOT_POINTS": 10000,  # Downsample threshold for plotting
     "ENVELOPE_MODE_LIMIT": 10e-3,  # Use envelope when time span >10ms, show thresholds when <10ms
     "YSCALE_MODE": "snr",  # y-scale mode for event plotter: 'snr', 'percent' or 'raw'
     "FILTER_TYPE": "gaussian",  # Filter type: "savgol", "gaussian", "moving_average", "median"
     "FILTER_ORDER": 3,  # Order of the savgol filter for smoothing
+    "crop": [100, -1],
     # ---
-    "DATA_PATH": "../data/20250703-bsa/",
+    "DATA_PATH": "../data/2025-07-17_bsa/",
     "MEASUREMENTS": [
         {
-            "data": "RefCurve_2025-07-03_3_014156.Wfm.bin",
-            "crop": [100, -1],
+            "data": "RefCurve_2025-07-17_0_065114.Wfm.bin",
         },
         {
-            "data": "RefCurve_2025-07-03_4_014809.Wfm.bin",
-            "crop": [100, -1],
+            "data": "RefCurve_2025-07-17_1_065214.Wfm.bin",
         },
         {
-            "data": "RefCurve_2025-07-03_5_015243.Wfm.bin",
-            "crop": [100, -1],
+            "data": "RefCurve_2025-07-17_2_065510.Wfm.bin",
+        },
+        {
+            "data": "RefCurve_2025-07-17_3_065814.Wfm.bin",
+        },
+        {
+            "data": "RefCurve_2025-07-17_4_065850.Wfm.bin",
+        },
+        {
+            "data": "RefCurve_2025-07-17_5_070003.Wfm.bin",
+        },
+        {
+            "data": "RefCurve_2025-07-17_6_070045.Wfm.bin",
+        },
+        {
+            "data": "RefCurve_2025-07-17_7_070339.Wfm.bin",
         },
     ],
 }
@@ -80,7 +93,7 @@ def main() -> None:
             sidecar=sidecar,
             crop=merged_config.get("crop"),
             yscale_mode=merged_config.get("YSCALE_MODE", "snr"),
-            show_plots=False,
+            show_plots=True,
             filter_type=merged_config.get("FILTER_TYPE", "gaussian"),
             filter_order=merged_config.get("FILTER_ORDER", 2),
         )

@@ -37,7 +37,7 @@ class OscilloscopePlot:
     DEFAULT_Y_MARGIN_FRACTION = 0.15
     DEFAULT_SIGNAL_LINE_WIDTH = 1.0
     DEFAULT_SIGNAL_ALPHA = 0.75
-    DEFAULT_ENVELOPE_ALPHA = 0.4
+    DEFAULT_ENVELOPE_ALPHA = 0.75
     DEFAULT_REGION_ALPHA = 0.4
     DEFAULT_REGION_ZORDER = -5
 
@@ -86,7 +86,7 @@ class OscilloscopePlot:
             Line width for the raw signal plot.
         signal_alpha : float, default=0.75
             Alpha (transparency) for the raw signal plot.
-        envelope_alpha : float, default=0.4
+        envelope_alpha : float, default=1.0
             Alpha (transparency) for the envelope fill.
         region_alpha : float, default=0.4
             Alpha (transparency) for region highlight fills.
@@ -315,7 +315,7 @@ class OscilloscopePlot:
         width: Union[float, np.ndarray],
         label: str = "Ribbon",
         color: str = "gray",
-        alpha: float = 0.3,
+        alpha: float = 0.6,
         display_mode: int = MODE_DETAIL,
         trace_idx: int = 0,
         zorder: int = 2,
@@ -335,7 +335,7 @@ class OscilloscopePlot:
             Label for the legend.
         color : str, default="gray"
             Color for the ribbon.
-        alpha : float, default=0.3
+        alpha : float, default=0.6
             Alpha (transparency) for the ribbon.
         display_mode : int, default=MODE_DETAIL
             Which mode(s) to show this ribbon in (MODE_ENVELOPE, MODE_DETAIL, or MODE_BOTH).
@@ -646,7 +646,7 @@ class OscilloscopePlot:
             x_max,
             alpha=self.envelope_alpha,
             color=color,
-            lw=0,
+            lw=0.1,
             label=f"Raw envelope ({name})"
             if self.data.num_traces > 1
             else "Raw envelope",
