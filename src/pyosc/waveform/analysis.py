@@ -74,6 +74,7 @@ def extract_preview_image(xml_path: str, output_path: str) -> Optional[str]:
     try:
         tree = ET.parse(xml_path)
         root = tree.getroot()
+        logger.critical("Attempting to extract preview image from XML sidecar")
         
         # Find PreviewImage element
         preview_elem = root.find(".//PreviewImage")
@@ -115,12 +116,11 @@ def plot_preview_image(image_path: str, title: str = "Preview Image") -> None:
     try:
         image = Image.open(image_path)
         
-        plt.figure(figsize=(10, 6))
-        plt.imshow(image)
-        plt.title(title)
-        plt.axis('off')  # Hide axes for cleaner display
-        plt.tight_layout()
-        
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.imshow(image)
+        ax.set_title(title)
+        ax.axis('off')  # Hide axes for cleaner display
+
     except Exception as e:
         logger.warning(f"Failed to display preview image {image_path}: {e}")
 
@@ -900,6 +900,21 @@ def process_file(
     # Stage 1: Load Data
     t, x = load_data(name, sampling_interval, data_path, sidecar, crop)
 
+    analysis_dir = data_path[:-1] if data_path.endswith("/") else data_path
+    analysis_dir += "_analysis/"
+    if not os.path.exists(analysis_dir):
+        os.makedirs(analysis_dir)
+
+    # Extract and save preview image
+    if sidecar:
+        xml_path = os.path.join(data_path, sidecar) if data_path else sidecar
+        preview_path = os.path.join(analysis_dir, f"{name}_preview.png")
+        logger.critical("HERE I AM")
+        saved_preview = extract_preview_image(xml_path, preview_path)
+
+        if saved_preview and show_plots:
+            plot_preview_image(saved_preview, f"Preview: {name}")
+
     # Calculate parameters
     smooth_n, min_event_n = calculate_smoothing_parameters(
         sampling_interval,
@@ -980,19 +995,6 @@ def process_file(
     )
 
     # Save plots
-    analysis_dir = data_path[:-1] if data_path.endswith("/") else data_path
-    analysis_dir += "_analysis/"
-    if not os.path.exists(analysis_dir):
-        os.makedirs(analysis_dir)
-
-    # Extract and save preview image
-    if sidecar:
-        xml_path = os.path.join(data_path, sidecar) if data_path else sidecar
-        preview_path = os.path.join(analysis_dir, f"{name}_preview.png")
-        saved_preview = extract_preview_image(xml_path, preview_path)
-        
-        if saved_preview and show_plots:
-            plot_preview_image(saved_preview, f"Preview: {name}")
 
     plot.save(analysis_dir + f"{name}_trace.png")
 

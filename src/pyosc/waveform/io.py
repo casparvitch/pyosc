@@ -277,13 +277,30 @@ def rd(
     # Determine byte order
     byteorder = "<" if params["byte_order"] == "LSB" else ">"
     try:
-        arr = np.fromfile(fp, dtype=byteorder + dtype().dtype.char)
+        with open(fp, "rb") as f:
+            import struct
+            # Read first two bytes into two 32-bit unsigned integers,
+            header_bytes = f.read(8)
+            elsize, record_length_from_header = struct.unpack('<II', header_bytes)
+            logger.success(f"Bin header: data el. size: {elsize} (bytes)")
+            logger.success(f"Bin header: length: {record_length_from_header} ({elsize}-byte nums)")
+            params["record_length_from_header"] = record_length_from_header
+        if params["signal_hardware_record_length"] != record_length_from_header:
+            logger.warning(
+                f"SignalHardwareRecordLength ({params['signal_hardware_record_length']}) "
+                f"does not match header record length ({record_length_from_header}) in {rel_fp}. "
+                "This may indicate a mismatch in expected data length."
+            )
+
+        # first 8 bytes are the header (equiv to 2 float32s)
+        arr = np.fromfile(fp, dtype=byteorder + dtype().dtype.char, offset=8)
         
         # Validate expected data length if available
         expected_length = params["signal_hardware_record_length"]
         if expected_length is not None:
             if len(arr) != expected_length:
-                raise RuntimeError(
+                # raise RuntimeError(
+                logger.warning(
                     f"Data length mismatch in {rel_fp}: "
                     f"expected {expected_length} points from SignalHardwareRecordLength, "
                     f"but read {len(arr)} points from binary file"
