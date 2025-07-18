@@ -68,6 +68,7 @@ def get_waveform_params(
         "vertical_offset": None,
         "byte_order": "LSB",  # default
         "signal_format": "float32",  # default
+        "signal_hardware_record_length": None,
     }
     found_resolution = False
     if not os.path.exists(xml_path):
@@ -151,6 +152,9 @@ def get_waveform_params(
                             f"Unknown SignalFormat '{value}' in {xml_path}, using default float32"
                         )
                     found_params.add("SignalFormat")
+                elif name == "SignalHardwareRecordLength":
+                    params["signal_hardware_record_length"] = int(value)
+                    found_params.add("SignalHardwareRecordLength")
             except ValueError as e:
                 logger.warning(
                     f"Failed to parse {name} value '{value}' in {xml_path}: {e}"
@@ -274,6 +278,17 @@ def rd(
     byteorder = "<" if params["byte_order"] == "LSB" else ">"
     try:
         arr = np.fromfile(fp, dtype=byteorder + dtype().dtype.char)
+        
+        # Validate expected data length if available
+        expected_length = params["signal_hardware_record_length"]
+        if expected_length is not None:
+            if len(arr) != expected_length:
+                raise RuntimeError(
+                    f"Data length mismatch in {rel_fp}: "
+                    f"expected {expected_length} points from SignalHardwareRecordLength, "
+                    f"but read {len(arr)} points from binary file"
+                )
+        
         if crop is not None:
             x = arr[crop[0] : crop[1]]
         else:
