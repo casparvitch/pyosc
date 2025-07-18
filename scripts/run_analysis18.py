@@ -66,14 +66,10 @@ def main() -> None:
         name = merged_config["data"]
         sidecar = merged_config.get("sidecar")
 
-        if sidecar:
-            params = get_waveform_params(
-                name, data_path=merged_config["DATA_PATH"], xml_filename=sidecar
-            )
-            sampling_interval = params["sampling_interval"]
-        else:
-            params = get_waveform_params(name, data_path=merged_config["DATA_PATH"])
-            sampling_interval = params["sampling_interval"]
+        params = get_waveform_params(
+            name, data_path=merged_config["DATA_PATH"], sidecar=sidecar
+        )
+        sampling_interval = params["sampling_interval"]
 
         # Call with explicit parameters
         process_file(

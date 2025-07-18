@@ -7,16 +7,58 @@ import numpy as np
 from loguru import logger
 
 
+def _get_xml_sidecar_path(
+    bin_filename: str, 
+    data_path: Optional[str] = None, 
+    sidecar: Optional[str] = None
+) -> str:
+    """
+    Determine the XML sidecar file path using consistent logic.
+    
+    Parameters
+    ----------
+    bin_filename : str
+        Name of the binary waveform file.
+    data_path : str, optional
+        Path to the data directory.
+    sidecar : str, optional
+        Name of the XML sidecar file. If None, auto-detects from bin_filename.
+        
+    Returns
+    -------
+    str
+        Full path to the XML sidecar file.
+    """
+    if sidecar is not None:
+        sidecar_path = (
+            os.path.join(data_path, sidecar)
+            if data_path is not None and not os.path.isabs(sidecar)
+            else sidecar
+        )
+    else:
+        base = os.path.splitext(bin_filename)[0]
+        if base.endswith(".Wfm"):
+            sidecar_guess = base[:-4] + ".bin"
+        else:
+            sidecar_guess = base + ".bin"
+        sidecar_path = (
+            os.path.join(data_path, sidecar_guess)
+            if data_path is not None
+            else sidecar_guess
+        )
+    return sidecar_path
+
+
 def get_waveform_params(
     bin_filename: str,
     data_path: Optional[str] = None,
-    xml_filename: Optional[str] = None,  # the header file
+    sidecar: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Parse XML sidecar file to extract waveform parameters.
 
     Given a binary waveform filename, find and parse the corresponding XML sidecar file.
-    If xml_filename is provided, use it directly. Otherwise, guess from bin_filename.
+    If sidecar is provided, use it directly. Otherwise, guess from bin_filename.
 
     Parameters
     ----------
@@ -24,7 +66,7 @@ def get_waveform_params(
         Name of the binary waveform file.
     data_path : str, optional
         Path to the data directory. If None, uses current directory.
-    xml_filename : str, optional
+    sidecar : str, optional
         Name of the XML sidecar file. If None, guesses from bin_filename.
 
     Returns
@@ -45,23 +87,7 @@ def get_waveform_params(
     UserWarning
         If sampling resolution is not found in XML.
     """
-    if xml_filename is not None:
-        xml_path = (
-            os.path.join(data_path, xml_filename)
-            if data_path is not None and not os.path.isabs(xml_filename)
-            else xml_filename
-        )
-    else:
-        base = os.path.splitext(bin_filename)[0]
-        if base.endswith(".Wfm"):
-            xml_filename_guess = base[:-4] + ".bin"
-        else:
-            xml_filename_guess = base + ".bin"
-        xml_path = (
-            os.path.join(data_path, xml_filename_guess)
-            if data_path is not None
-            else xml_filename_guess
-        )
+    sidecar_path = _get_xml_sidecar_path(bin_filename, data_path, sidecar)
     params = {
         "sampling_interval": None,
         "vertical_scale": None,
@@ -71,23 +97,23 @@ def get_waveform_params(
         "signal_hardware_record_length": None,
     }
     found_resolution = False
-    if not os.path.exists(xml_path):
+    if not os.path.exists(sidecar_path):
         msg = (
-            f"XML sidecar file not found: {xml_path}\n"
+            f"XML sidecar file not found: {sidecar_path}\n"
             f"  bin_filename: {bin_filename}\n"
-            f"  xml_filename: {xml_filename}\n"
+            f"  sidecar: {sidecar}\n"
             f"  data_path: {data_path}\n"
-            f"  Tried path: {xml_path}\n"
+            f"  Tried path: {sidecar_path}\n"
             f"Please check that the XML sidecar exists and the path is correct."
         )
         raise FileNotFoundError(msg)
     try:
-        tree = ET.parse(xml_path)
+        tree = ET.parse(sidecar_path)
         root = tree.getroot()
 
         # Validate XML structure
         if root is None:
-            raise RuntimeError(f"XML file has no root element: {xml_path}")
+            raise RuntimeError(f"XML file has no root element: {sidecar_path}")
 
         # Track which parameters we found for validation
         found_params = set()
@@ -96,7 +122,7 @@ def get_waveform_params(
 
         for prop in root.iter("Prop"):
             if prop.attrib is None:
-                logger.warning(f"Found Prop element with no attributes in {xml_path}")
+                logger.warning(f"Found Prop element with no attributes in {sidecar_path}")
                 continue
 
             name = prop.attrib.get("Name", "")
@@ -104,7 +130,7 @@ def get_waveform_params(
 
             if not name:
                 logger.warning(
-                    f"Found Prop element with empty Name attribute in {xml_path}"
+                    f"Found Prop element with empty Name attribute in {sidecar_path}"
                 )
                 continue
 
@@ -130,7 +156,7 @@ def get_waveform_params(
                 elif name == "ByteOrder":
                     if not value:
                         logger.warning(
-                            f"Empty ByteOrder value in {xml_path}, using default LSB"
+                            f"Empty ByteOrder value in {sidecar_path}, using default LSB"
                         )
                         continue
                     params["byte_order"] = "LSB" if "LSB" in value else "MSB"
@@ -138,7 +164,7 @@ def get_waveform_params(
                 elif name == "SignalFormat":
                     if not value:
                         logger.warning(
-                            f"Empty SignalFormat value in {xml_path}, using default float32"
+                            f"Empty SignalFormat value in {sidecar_path}, using default float32"
                         )
                         continue
                     if "FLOAT" in value:
@@ -149,7 +175,7 @@ def get_waveform_params(
                         params["signal_format"] = "int32"
                     else:
                         logger.warning(
-                            f"Unknown SignalFormat '{value}' in {xml_path}, using default float32"
+                            f"Unknown SignalFormat '{value}' in {sidecar_path}, using default float32"
                         )
                     found_params.add("SignalFormat")
                 elif name == "SignalHardwareRecordLength":
@@ -157,7 +183,7 @@ def get_waveform_params(
                     found_params.add("SignalHardwareRecordLength")
             except ValueError as e:
                 logger.warning(
-                    f"Failed to parse {name} value '{value}' in {xml_path}: {e}"
+                    f"Failed to parse {name} value '{value}' in {sidecar_path}: {e}"
                 )
                 continue
 
@@ -174,7 +200,7 @@ def get_waveform_params(
             and not np.isclose(signal_resolution, resolution, rtol=1e-2, atol=1e-9)
         ):
             logger.warning(
-                f"FYI: 'Resolution' ({resolution}) != SignalResolution' ({signal_resolution}) found in {xml_path}. "
+                f"FYI: 'Resolution' ({resolution}) != SignalResolution' ({signal_resolution}) found in {sidecar_path}. "
                 f"Using 'Resolution' ({signal_resolution}). Diff: {abs(signal_resolution - resolution)}"
             )
 
@@ -184,14 +210,14 @@ def get_waveform_params(
         # Validate sampling interval if found
         if params["sampling_interval"] is not None and params["sampling_interval"] <= 0:
             logger.warning(
-                f"Invalid sampling interval {params['sampling_interval']} in {xml_path}. "
+                f"Invalid sampling interval {params['sampling_interval']} in {sidecar_path}. "
                 "This may lead to issues with time array generation."
             )
 
     except ET.ParseError as e:
-        raise RuntimeError(f"XML parsing error in {xml_path}: {e}")
+        raise RuntimeError(f"XML parsing error in {sidecar_path}: {e}")
     except Exception as e:
-        raise RuntimeError(f"Failed to parse XML sidecar: {xml_path}: {e}")
+        raise RuntimeError(f"Failed to parse XML sidecar: {sidecar_path}: {e}")
     return params
 
 
@@ -199,7 +225,7 @@ def rd(
     filename: str,
     sampling_interval: Optional[float] = None,
     data_path: Optional[str] = None,
-    xml_filename: Optional[str] = None,
+    sidecar: Optional[str] = None,
     crop: Optional[List[int]] = None,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
@@ -213,7 +239,7 @@ def rd(
         Sampling interval in seconds. If None, reads from XML sidecar.
     data_path : str, optional
         Path to the data directory.
-    xml_filename : str, optional
+    sidecar : str, optional
         Name of the XML sidecar file.
     crop : List[int], optional
         Crop indices [start, end]. If None, uses entire signal.
@@ -236,7 +262,7 @@ def rd(
     else:
         fp = filename
     params = get_waveform_params(
-        os.path.basename(fp), data_path, xml_filename=xml_filename
+        os.path.basename(fp), data_path, sidecar=sidecar
     )
     # Use sampling_interval from XML if available, else argument, else raise error
     si = params["sampling_interval"]
@@ -251,18 +277,14 @@ def rd(
     # log info about what we're reading and the parameters
     rel_fp = os.path.relpath(fp, os.getcwd()) if os.path.isabs(fp) else fp
     logger.info(f"Reading binary file: {rel_fp}")
-    if xml_filename:
-        xml_path = (
-            os.path.relpath(os.path.join(data_path, xml_filename), os.getcwd())
-            if data_path is not None and not os.path.isabs(xml_filename)
-            else xml_filename
+    if sidecar:
+        sidecar_path = _get_xml_sidecar_path(os.path.basename(fp), data_path, sidecar)
+        rel_sidecar = (
+            os.path.relpath(sidecar_path, os.getcwd())
+            if os.path.isabs(sidecar_path)
+            else sidecar_path
         )
-        rel_xml = (
-            os.path.relpath(xml_path, os.getcwd())
-            if os.path.isabs(xml_path)
-            else xml_path
-        )
-        logger.info(f"--Using sidecar XML: {rel_xml}")
+        logger.info(f"--Using sidecar XML: {rel_sidecar}")
     logger.info(f"--Sampling interval: {si}")
     logger.info(f"--Vertical scale: {params['vertical_scale']}")
     logger.info(f"--Vertical offset: {params['vertical_offset']}")

@@ -120,6 +120,7 @@ def plot_preview_image(image_path: str, title: str = "Preview Image") -> None:
         ax.imshow(image)
         ax.set_title(title)
         ax.axis('off')  # Hide axes for cleaner display
+        plt.show()  # Display the figure
 
     except Exception as e:
         logger.warning(f"Failed to display preview image {image_path}: {e}")
@@ -906,14 +907,14 @@ def process_file(
         os.makedirs(analysis_dir)
 
     # Extract and save preview image
-    if sidecar:
-        xml_path = os.path.join(data_path, sidecar) if data_path else sidecar
-        preview_path = os.path.join(analysis_dir, f"{name}_preview.png")
-        logger.critical("HERE I AM")
-        saved_preview = extract_preview_image(xml_path, preview_path)
+    from pyosc.waveform.io import _get_xml_sidecar_path
+    sidecar_path = _get_xml_sidecar_path(name, data_path, sidecar)
+    logger.info(f"Attempting to extract preview from: {sidecar_path}")
+    preview_path = os.path.join(analysis_dir, f"{name}_preview.png")
+    saved_preview = extract_preview_image(sidecar_path, preview_path)
 
-        if saved_preview and show_plots:
-            plot_preview_image(saved_preview, f"Preview: {name}")
+    if saved_preview and show_plots:
+        plot_preview_image(saved_preview, f"Preview: {name}")
 
     # Calculate parameters
     smooth_n, min_event_n = calculate_smoothing_parameters(
