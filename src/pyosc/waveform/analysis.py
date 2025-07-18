@@ -1,3 +1,5 @@
+import base64
+import io
 import os
 import sys
 import time
@@ -7,6 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from loguru import logger
 from numba import njit
+from PIL import Image
 from scipy.ndimage import gaussian_filter1d, median_filter, uniform_filter1d
 from scipy.signal import savgol_filter
 
@@ -18,6 +21,7 @@ from pyosc.waveform.event_detector import (
 )
 from pyosc.waveform.event_plotter import EventPlotter
 from pyosc.waveform.io import rd
+import xml.etree.ElementTree as ET
 
 
 @njit
@@ -49,6 +53,76 @@ def _create_event_mask_numba(t: np.ndarray, events: np.ndarray) -> np.ndarray:
                 mask[j] = False
 
     return mask
+
+
+def extract_preview_image(xml_path: str, output_path: str) -> Optional[str]:
+    """
+    Extract preview image from XML sidecar and save as PNG.
+    
+    Parameters
+    ----------
+    xml_path : str
+        Path to the XML sidecar file.
+    output_path : str
+        Path where to save the PNG file.
+        
+    Returns
+    -------
+    Optional[str]
+        Path to saved PNG file, or None if no image found.
+    """
+    try:
+        tree = ET.parse(xml_path)
+        root = tree.getroot()
+        
+        # Find PreviewImage element
+        preview_elem = root.find(".//PreviewImage")
+        if preview_elem is None:
+            logger.warning(f"No PreviewImage found in {xml_path}")
+            return None
+            
+        image_data = preview_elem.get("ImageData")
+        if not image_data:
+            logger.warning(f"Empty ImageData in PreviewImage from {xml_path}")
+            return None
+            
+        # Decode base64 image data
+        image_bytes = base64.b64decode(image_data)
+        
+        # Open with PIL and save as PNG
+        image = Image.open(io.BytesIO(image_bytes))
+        image.save(output_path, "PNG")
+        
+        logger.info(f"Saved preview image: {output_path}")
+        return output_path
+        
+    except Exception as e:
+        logger.warning(f"Failed to extract preview image from {xml_path}: {e}")
+        return None
+
+
+def plot_preview_image(image_path: str, title: str = "Preview Image") -> None:
+    """
+    Display preview image using matplotlib.
+    
+    Parameters
+    ----------
+    image_path : str
+        Path to the image file.
+    title : str
+        Title for the plot.
+    """
+    try:
+        image = Image.open(image_path)
+        
+        plt.figure(figsize=(10, 6))
+        plt.imshow(image)
+        plt.title(title)
+        plt.axis('off')  # Hide axes for cleaner display
+        plt.tight_layout()
+        
+    except Exception as e:
+        logger.warning(f"Failed to display preview image {image_path}: {e}")
 
 
 def configure_logging(log_level: str = "INFO") -> None:
@@ -910,6 +984,16 @@ def process_file(
     analysis_dir += "_analysis/"
     if not os.path.exists(analysis_dir):
         os.makedirs(analysis_dir)
+
+    # Extract and save preview image
+    if sidecar:
+        xml_path = os.path.join(data_path, sidecar) if data_path else sidecar
+        preview_path = os.path.join(analysis_dir, f"{name}_preview.png")
+        saved_preview = extract_preview_image(xml_path, preview_path)
+        
+        if saved_preview and show_plots:
+            plot_preview_image(saved_preview, f"Preview: {name}")
+
     plot.save(analysis_dir + f"{name}_trace.png")
 
     # Create event plotter
