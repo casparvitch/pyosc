@@ -55,13 +55,13 @@ def _create_event_mask_numba(t: np.ndarray, events: np.ndarray) -> np.ndarray:
     return mask
 
 
-def extract_preview_image(xml_path: str, output_path: str) -> Optional[str]:
+def extract_preview_image(sidecar_path: str, output_path: str) -> Optional[str]:
     """
     Extract preview image from XML sidecar and save as PNG.
     
     Parameters
     ----------
-    xml_path : str
+    sidecar_path : str
         Path to the XML sidecar file.
     output_path : str
         Path where to save the PNG file.
@@ -72,19 +72,18 @@ def extract_preview_image(xml_path: str, output_path: str) -> Optional[str]:
         Path to saved PNG file, or None if no image found.
     """
     try:
-        tree = ET.parse(xml_path)
+        tree = ET.parse(sidecar_path)
         root = tree.getroot()
-        logger.critical("Attempting to extract preview image from XML sidecar")
-        
+
         # Find PreviewImage element
         preview_elem = root.find(".//PreviewImage")
         if preview_elem is None:
-            logger.warning(f"No PreviewImage found in {xml_path}")
+            logger.warning(f"No PreviewImage found in {sidecar_path}")
             return None
             
         image_data = preview_elem.get("ImageData")
         if not image_data:
-            logger.warning(f"Empty ImageData in PreviewImage from {xml_path}")
+            logger.warning(f"Empty ImageData in PreviewImage from {sidecar_path}")
             return None
             
         # Decode base64 image data
@@ -98,7 +97,7 @@ def extract_preview_image(xml_path: str, output_path: str) -> Optional[str]:
         return output_path
         
     except Exception as e:
-        logger.warning(f"Failed to extract preview image from {xml_path}: {e}")
+        logger.warning(f"Failed to extract preview image from {sidecar_path}: {e}")
         return None
 
 
@@ -120,7 +119,6 @@ def plot_preview_image(image_path: str, title: str = "Preview Image") -> None:
         ax.imshow(image)
         ax.set_title(title)
         ax.axis('off')  # Hide axes for cleaner display
-        plt.show()  # Display the figure
 
     except Exception as e:
         logger.warning(f"Failed to display preview image {image_path}: {e}")
@@ -177,7 +175,7 @@ def load_data(
         name,
         sampling_interval,
         data_path=data_path,
-        xml_filename=sidecar,
+        sidecar=sidecar,
         crop=crop,
     )
 

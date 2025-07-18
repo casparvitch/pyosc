@@ -303,14 +303,18 @@ class DecimationManager:
 
         # Calculate step size for decimation based on max_points
         step = max(1, len(t) // max_points)
-        
+
         # For envelope mode, calculate adaptive envelope window based on data density
         adaptive_envelope_window = None
         if use_envelope and len(t) > max_points:
             # Calculate envelope window based on how much we're decimating
             # This ensures envelope resolution matches display capability
-            adaptive_envelope_window = max(1, step // 2)  # Half the step size for smoother envelope
-            logger.debug(f"Calculated adaptive envelope window: {adaptive_envelope_window} samples (step={step})")
+            adaptive_envelope_window = max(
+                1, step // 2
+            )  # Half the step size for smoother envelope
+            logger.debug(
+                f"Calculated adaptive envelope window: {adaptive_envelope_window} samples (step={step})"
+            )
 
         # Ensure step is not zero, and calculate number of bins
         if step == 0:  # Should not happen with max(1, ...) but as a safeguard

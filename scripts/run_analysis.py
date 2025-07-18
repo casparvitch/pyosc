@@ -25,17 +25,15 @@ CONFIG = {
         {
             "data": "nf-300uw7mVpm-2mhz.Wfm.bin",
             "sidecar": "nf-300uw-2mhz.bin",
-            "crop": [100, -1],
         },
-        {"data": "8mvpm.Wfm.bin", "crop": [100, -1]},
-        {"data": "300uw.Wfm.bin", "crop": [100, -1]},
+        {"data": "8mvpm.Wfm.bin"},
+        {"data": "300uw.Wfm.bin"},
         {
             "data": "300uw-8mvpm.Wfm.bin",
             "sidecar": "300uw-7mvpm.bin",
-            "crop": [100, -1],
         },
-        {"data": "400uw-12mvpm.Wfm.bin", "crop": [100, -1]},
-        {"data": "msg10an5min1200uc-100uw30coup1.2mvpm30db.Wfm.bin", "crop": [100, -1]},
+        {"data": "400uw-12mvpm.Wfm.bin"},
+        {"data": "msg10an5min1200uc-100uw30coup1.2mvpm30db.Wfm.bin" },
     ],
 }
 

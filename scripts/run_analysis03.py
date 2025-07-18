@@ -13,7 +13,7 @@ CONFIG = {
     "MIN_EVENT_T": 0.75e-6,  # minimum event duration (seconds)
     "WIDEN_FRAC": 10,  # fraction of event length to widen detected events
     "SIGNAL_POLARITY": -1,  # Signal polarity: -1 for negative events (below background), +1 for positive events (above background)
-    "LOG_LEVEL": "INFO",  # logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+    "LOG_LEVEL": "SUCCESS",  # logging level: DEBUG, INFO, SUCCESS, WARNING, ERROR, CRITICAL
     "MAX_PLOT_POINTS": 10000,  # Downsample threshold for plotting
     "ENVELOPE_MODE_LIMIT": 10e-3,  # Use envelope when time span >10ms, show thresholds when <10ms
     "YSCALE_MODE": "snr",  # y-scale mode for event plotter: 'snr', 'percent' or 'raw'
@@ -24,15 +24,12 @@ CONFIG = {
     "MEASUREMENTS": [
         {
             "data": "RefCurve_2025-07-03_3_014156.Wfm.bin",
-            "crop": [100, -1],
         },
         {
             "data": "RefCurve_2025-07-03_4_014809.Wfm.bin",
-            "crop": [100, -1],
         },
         {
             "data": "RefCurve_2025-07-03_5_015243.Wfm.bin",
-            "crop": [100, -1],
         },
     ],
 }

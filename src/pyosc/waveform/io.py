@@ -146,13 +146,7 @@ def get_waveform_params(
                     found_params.add("Resolution")
                     signal_resolution = float(value)
                 elif name == "SignalResolution":
-                    signal_resolution = float(value)
-                elif name == "VerticalScale":
-                    params["vertical_scale"] = float(value)
-                    found_params.add("VerticalScale")
-                elif name == "VerticalOffset":
-                    params["vertical_offset"] = float(value)
-                    found_params.add("VerticalOffset")
+                    signal_resolution = float(value) # store val even if Resolution is found
                 elif name == "ByteOrder":
                     if not value:
                         logger.warning(
@@ -286,8 +280,6 @@ def rd(
         )
         logger.info(f"--Using sidecar XML: {rel_sidecar}")
     logger.info(f"--Sampling interval: {si}")
-    logger.info(f"--Vertical scale: {params['vertical_scale']}")
-    logger.info(f"--Vertical offset: {params['vertical_offset']}")
     logger.info(f"--Byte order: {params['byte_order']}")
     logger.info(f"--Signal format: {params['signal_format']}")
     # Determine dtype
@@ -337,10 +329,7 @@ def rd(
             f"The file '{fp}' was not found. "
             + "Please ensure the file is in the correct directory."
         )
-    # Scale and offset, ensuring float32 throughout
-    scale = params["vertical_scale"] if params["vertical_scale"] is not None else 1.0
-    offset = params["vertical_offset"] if params["vertical_offset"] is not None else 0.0
-    x = (x * np.float32(scale) + np.float32(offset)).astype(np.float32)
+    x = x.astype(np.float32) # NB: data is already in physical units (V)
 
     # Use np.linspace for more robust time array generation
     num_points = len(x)

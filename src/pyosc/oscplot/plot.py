@@ -114,7 +114,9 @@ class OscilloscopePlot:
         # envelope_window_samples is now deprecated - envelope window is calculated automatically
         # Keep the parameter for backward compatibility but don't use it
         if envelope_window_samples is not None:
-            logger.warning("envelope_window_samples parameter is deprecated. Envelope window is now calculated automatically based on zoom level.")
+            logger.warning(
+                "envelope_window_samples parameter is deprecated. Envelope window is now calculated automatically based on zoom level."
+            )
 
         # Initialize managers
         self.data = TimeSeriesDataManager(t, x, name, trace_colors)
