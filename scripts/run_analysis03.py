@@ -9,7 +9,7 @@ CONFIG = {
     "SMOOTH_WIN_T": 50e-6,  # smoothing window in seconds (set to None to use frequency)
     "SMOOTH_WIN_F": None,  # smoothing window in Hz (set to None to use time)
     "DETECTION_SNR": 4,  # point-by-point detection threshold, <MIN_EVENT_KEEP_SNR
-    "MIN_EVENT_KEEP_SNR": 6,  # min event (max-)amplitude in multiples of global noise
+    "MIN_EVENT_KEEP_SNR": 5,  # min event (max-)amplitude in multiples of global noise
     "MIN_EVENT_T": 0.75e-6,  # minimum event duration (seconds)
     "WIDEN_FRAC": 10,  # fraction of event length to widen detected events
     "SIGNAL_POLARITY": -1,  # Signal polarity: -1 for negative events (below background), +1 for positive events (above background)
