@@ -1,13 +1,11 @@
 [project]
-name = "pyosc"
+name = "pyosc-wf"
 version = "0.1.0"
-description = "A library for analyzing R&S RTE1000 oscilloscope waveform data and detecting events."
+description = "Waveform-specific components for PyOSC."
 authors = [{ name = "Sam Scholten", email = "s.scholten@uq.edu.au" }]
-readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
-    "numpy",
-    "matplotlib",
+    "pyosc-plot @ file:///${PROJECT_ROOT}/pyosc-plot",
     "loguru",
     "scipy",
     "numba",
@@ -19,3 +17,4 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
