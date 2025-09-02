@@ -1,5 +1,5 @@
 [project]
-name = "pyosc-plot"
+name = "pyosc"
 version = "0.1.0"
 description = "General-purpose oscilloscope plotting components for PyOSC."
 authors = [{ name = "Sam Scholten", email = "s.scholten@uq.edu.au" }]

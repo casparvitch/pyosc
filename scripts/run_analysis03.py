@@ -2,7 +2,7 @@ from warnings import warn
 
 import matplotlib as mpl
 
-from pyosc.waveform import configure_logging, get_waveform_params, process_file
+from transiment import configure_logging, get_waveform_params, process_file
 
 # --- User configuration dictionary ---
 CONFIG = {
@@ -53,7 +53,7 @@ def main() -> None:
 
         if sidecar:
             params = get_waveform_params(
-                name, data_path=merged_config["DATA_PATH"], xml_filename=sidecar
+                name, data_path=merged_config["DATA_PATH"], sidecar=sidecar
             )
             sampling_interval = params["sampling_interval"]
         else:

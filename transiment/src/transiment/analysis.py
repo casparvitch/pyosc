@@ -15,7 +15,8 @@ from scipy.signal import savgol_filter
 
 from scipy.signal import savgol_filter
 
-from pyosc_plot.plot import OscilloscopePlot
+from pyosc.plot import OscilloscopePlot
+from pywf import _get_xml_sidecar_path, rd
 
 from .event_detector import (
     MEDIAN_TO_STD_FACTOR,
@@ -23,7 +24,6 @@ from .event_detector import (
     merge_overlapping_events,
 )
 from .event_plotter import EventPlotter
-from .io import _get_xml_sidecar_path, rd
 import xml.etree.ElementTree as ET
 
 

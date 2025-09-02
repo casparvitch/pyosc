@@ -6,12 +6,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 from loguru import logger
 
-from pyosc_plot.display_state import (
+from pyosc.display_state import (
     _create_time_formatter,
     _determine_offset_display_params,
     _get_optimal_time_unit_and_scale,
 )
-from pyosc_plot.plot import OscilloscopePlot
+from pyosc.plot import OscilloscopePlot
 
 
 class EventPlotter:

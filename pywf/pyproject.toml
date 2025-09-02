@@ -1,15 +1,11 @@
 [project]
-name = "transiment"
+name = "pywf"
 version = "0.1.0"
-description = "High-level analysis and plotting for transient events."
+description = "Waveform I/O utilities."
 authors = [{ name = "Sam Scholten", email = "s.scholten@uq.edu.au" }]
 requires-python = ">=3.8"
 dependencies = [
-    "pyosc @ file:///${PROJECT_ROOT}/pyosc",
-    "pywf @ file:///${PROJECT_ROOT}/pywf",
-    "loguru",
-    "scipy",
-    "numba",
+    "numpy",
 ]
 
 [build-system]
@@ -18,4 +14,3 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-
