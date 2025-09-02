@@ -5,11 +5,10 @@ description = "High-level analysis and plotting for transient events."
 authors = [{ name = "Sam Scholten", email = "s.scholten@uq.edu.au" }]
 requires-python = ">=3.8"
 dependencies = [
-    "pyosc @ file:///${PROJECT_ROOT}/pyosc",
-    "pywf @ file:///${PROJECT_ROOT}/pywf",
     "loguru",
     "scipy",
     "numba",
+    # also pyosc stuff, assumed pip-installed locally
 ]
 
 [build-system]
