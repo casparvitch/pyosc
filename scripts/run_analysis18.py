@@ -2,7 +2,7 @@ from warnings import warn
 
 import matplotlib as mpl
 
-from pyosc.waveform import configure_logging, get_waveform_params, process_file
+from pyosc_wf import configure_logging, get_waveform_params, process_file
 
 # --- User configuration dictionary ---
 CONFIG = {

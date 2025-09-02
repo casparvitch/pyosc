@@ -13,14 +13,17 @@ from PIL import Image
 from scipy.ndimage import gaussian_filter1d, median_filter, uniform_filter1d
 from scipy.signal import savgol_filter
 
-from pyosc.oscplot.plot import OscilloscopePlot
-from pyosc.waveform.event_detector import (
+from scipy.signal import savgol_filter
+
+from pyosc_plot.plot import OscilloscopePlot
+
+from .event_detector import (
     MEDIAN_TO_STD_FACTOR,
     detect_events,
     merge_overlapping_events,
 )
-from pyosc.waveform.event_plotter import EventPlotter
-from pyosc.waveform.io import rd
+from .event_plotter import EventPlotter
+from .io import _get_xml_sidecar_path, rd
 import xml.etree.ElementTree as ET
 
 
@@ -905,7 +908,6 @@ def process_file(
         os.makedirs(analysis_dir)
 
     # Extract and save preview image
-    from pyosc.waveform.io import _get_xml_sidecar_path
     sidecar_path = _get_xml_sidecar_path(name, data_path, sidecar)
     logger.info(f"Attempting to extract preview from: {sidecar_path}")
     preview_path = os.path.join(analysis_dir, f"{name}_preview.png")
