@@ -8,7 +8,8 @@ dependencies = [
     "loguru",
     "scipy",
     "numba",
-    # also pyosc stuff, assumed pip-installed locally
+    "pyosc",
+    "pywf"
 ]
 
 [build-system]
