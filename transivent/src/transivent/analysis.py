@@ -236,7 +236,7 @@ def calculate_smoothing_parameters(
     if smooth_n % 2 == 0:
         smooth_n += 1
 
-    min_event_n = int(min_event_t / sampling_interval)
+    min_event_n = max(1, int(min_event_t / sampling_interval))
 
     smooth_freq_hz = 1 / (smooth_n * sampling_interval)
     logger.info(

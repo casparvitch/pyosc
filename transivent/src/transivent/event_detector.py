@@ -257,7 +257,12 @@ def detect_events(
         start_idx = int(events_indices[i, 0])
         end_idx = int(events_indices[i, 1])
         events_array[i, 0] = time[start_idx]
-        events_array[i, 1] = time[end_idx]
+        if end_idx < len(time):
+            events_array[i, 1] = time[end_idx]
+        else:
+            # Event extends to the end of the signal. Extrapolate end time.
+            sampling_interval = time[1] - time[0] if len(time) > 1 else 0.0
+            events_array[i, 1] = time[-1] + sampling_interval
 
     logger.info(f"Raw detection found {len(events_array)} events")
 
