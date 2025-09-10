@@ -3,6 +3,7 @@ High-level analysis and plotting for transient events.
 """
 
 from .analysis import (
+    calculate_initial_background,
     calculate_smoothing_parameters,
     configure_logging,
     get_final_events,
@@ -15,6 +16,7 @@ from .event_plotter import EventPlotter
 from pywf import get_waveform_params, rd, rd_chunked
 
 __all__ = [
+    "calculate_initial_background",
     "calculate_smoothing_parameters",
     "configure_logging",
     "detect_events",
