@@ -846,8 +846,10 @@ def initialize_state(config: Dict[str, Any]) -> Dict[str, Any]:
     Dict[str, Any]
         The initial state dictionary.
     """
+    # Normalise keys to lowercase to allow for flexible config from user scripts
+    normalized_config = {k.lower(): v for k, v in config.items()}
     return {
-        "config": config,
+        "config": normalized_config,
         "events": [],  # To store lists of events from each chunk
         "overlap_buffer": {"t": np.array([]), "x": np.array([])},  # For seamless filtering
         "incomplete_event": None,  # To handle events spanning chunks
