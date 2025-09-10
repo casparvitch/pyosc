@@ -19,6 +19,7 @@ CONFIG = {
     "YSCALE_MODE": "snr",  # y-scale mode for event plotter: 'snr', 'percent' or 'raw'
     "FILTER_TYPE": "median",  # Filter type: "savgol", "gaussian", "moving_average", "median"
     "FILTER_ORDER": 3,  # Order of the savgol filter for smoothing
+    "CHUNK_SIZE": 1_000_000,  # Set to None to disable chunking
     # ---
     "DATA_PATH": "../hycav/data/2025-07-17_bsa/",
     "MEASUREMENTS": [
@@ -91,6 +92,7 @@ def main() -> None:
             show_plots=True,
             filter_type=merged_config.get("FILTER_TYPE", "gaussian"),
             filter_order=merged_config.get("FILTER_ORDER", 2),
+            chunk_size=merged_config.get("CHUNK_SIZE"),
         )
 
 

@@ -14,7 +14,7 @@ from scipy.ndimage import gaussian_filter1d, median_filter, uniform_filter1d
 from scipy.signal import savgol_filter
 
 from pyosc.plot import OscilloscopePlot
-from pywf import _get_xml_sidecar_path, rd
+from pywf import _get_xml_sidecar_path, rd, rd_chunked
 
 from .event_detector import (
     MEDIAN_TO_STD_FACTOR,
@@ -903,11 +903,37 @@ def process_chunk(
         - "bg_clean": The cleaned background estimate.
         - "events": The final detected events for the chunk.
     """
-    t, x = data
+    t_chunk, x_chunk = data
     config = state["config"]
+    overlap_buffer = state["overlap_buffer"]
+    smooth_n = config["smooth_n"]
+
+    # Prepend overlap buffer from previous chunk
+    t = np.concatenate((overlap_buffer["t"], t_chunk))
+    x = np.concatenate((overlap_buffer["x"], x_chunk))
+
+    # If this is the first chunk, there's nothing to process if data is too short
+    if len(x) < smooth_n:
+        # Not enough data to process, just buffer it for the next chunk
+        state["overlap_buffer"] = {"t": t, "x": x}
+        return {
+            "state": state,
+            "bg_initial": np.array([], dtype=np.float32),
+            "global_noise": np.float32(0),
+            "events_initial": np.array([], dtype=np.float32),
+            "bg_clean": np.array([], dtype=np.float32),
+            "events": np.array([], dtype=np.float32),
+        }
+
+    # Update overlap buffer for next iteration
+    # The buffer should be `smooth_n` points long for filtering
+    overlap_size = min(len(t), smooth_n)
+    state["overlap_buffer"] = {
+        "t": t[-overlap_size:],
+        "x": x[-overlap_size:],
+    }
 
     # Extract parameters from config
-    smooth_n = config["smooth_n"]
     min_event_n = config["min_event_n"]
     filter_type = config["filter_type"]
     detection_snr = config["detection_snr"]
@@ -983,6 +1009,7 @@ def process_file(
     show_plots: bool = True,
     filter_type: str = "gaussian",
     filter_order: int = 2,
+    chunk_size: Optional[int] = None,
 ) -> None:
     """
     Process a single waveform file for event detection.
@@ -1075,59 +1102,103 @@ def process_file(
     }
 
     state = initialize_state(config)
-    # For now, process the entire file as a single chunk
-    process_start_time = time.time()
-    results = process_chunk((t, x), state)
-    final_events = get_final_events(results["state"])
-    logger.debug(f"Core processing took {time.time() - process_start_time:.3f}s")
 
-    # Extract intermediate results for plotting and analysis
-    bg_initial = results["bg_initial"]
-    global_noise = results["global_noise"]
-    bg_clean = results["bg_clean"]
+    if chunk_size is None:
+        # --- Original full-file processing ---
+        t, x = load_data(name, sampling_interval, data_path, sidecar, crop)
 
-    # Analyze thresholds
-    detection_threshold, keep_threshold = analyze_thresholds(
-        x, bg_clean, global_noise, detection_snr, min_event_keep_snr, signal_polarity
-    )
+        # For now, process the entire file as a single chunk
+        process_start_time = time.time()
+        results = process_chunk((t, x), state)
+        final_events = get_final_events(results["state"])
+        logger.debug(f"Core processing took {time.time() - process_start_time:.3f}s")
 
-    # Stage 7: Event Analysis
-    analyze_events(t, x, bg_clean, final_events, global_noise, signal_polarity)
+        # Extract intermediate results for plotting and analysis
+        bg_initial = results["bg_initial"]
+        global_noise = results["global_noise"]
+        bg_clean = results["bg_clean"]
 
-    logger.debug(f"Total processing time: {time.time() - start_time:.3f}s")
+        # Analyze thresholds
+        detection_threshold, keep_threshold = analyze_thresholds(
+            x,
+            bg_clean,
+            global_noise,
+            detection_snr,
+            min_event_keep_snr,
+            signal_polarity,
+        )
 
-    # Stage 6: Visualization
-    plot = create_oscilloscope_plot(
-        t,
-        x,
-        bg_initial,
-        bg_clean,
-        final_events,
-        detection_threshold,
-        keep_threshold,
-        name,
-        detection_snr,
-        min_event_keep_snr,
-        max_plot_points,
-        envelope_mode_limit,
-        smooth_n,
-        global_noise=global_noise,
-    )
+        # Stage 7: Event Analysis
+        analyze_events(t, x, bg_clean, final_events, global_noise, signal_polarity)
 
-    # Save plots
+        logger.debug(f"Total processing time: {time.time() - start_time:.3f}s")
 
-    plot.save(analysis_dir + f"{name}_trace.png")
+        # Stage 6: Visualization
+        plot = create_oscilloscope_plot(
+            t,
+            x,
+            bg_initial,
+            bg_clean,
+            final_events,
+            detection_threshold,
+            keep_threshold,
+            name,
+            detection_snr,
+            min_event_keep_snr,
+            max_plot_points,
+            envelope_mode_limit,
+            smooth_n,
+            global_noise=global_noise,
+        )
 
-    # Create event plotter
-    event_plotter = EventPlotter(
-        plot,
-        final_events,
-        bg_clean=bg_clean,
-        global_noise=global_noise,
-        y_scale_mode=yscale_mode,
-    )
-    event_plotter.plot_events_grid(max_events=16)
-    event_plotter.save(analysis_dir + f"{name}_events.png")
+        # Save plots
 
-    if show_plots:
-        plt.show(block=True)
+        plot.save(analysis_dir + f"{name}_trace.png")
+
+        # Create event plotter
+        event_plotter = EventPlotter(
+            plot,
+            final_events,
+            bg_clean=bg_clean,
+            global_noise=global_noise,
+            y_scale_mode=yscale_mode,
+        )
+        event_plotter.plot_events_grid(max_events=16)
+        event_plotter.save(analysis_dir + f"{name}_events.png")
+
+        if show_plots:
+            plt.show(block=True)
+    else:
+        # --- Chunked processing ---
+        logger.info(
+            f"--- Starting chunked processing with chunk size: {chunk_size} ---"
+        )
+
+        chunk_generator = rd_chunked(
+            name,
+            chunk_size=chunk_size,
+            sampling_interval=sampling_interval,
+            data_path=data_path,
+            sidecar=sidecar,
+        )
+
+        process_start_time = time.time()
+
+        for t_chunk, x_chunk in chunk_generator:
+            results = process_chunk((t_chunk, x_chunk), state)
+            state = results["state"]
+
+        final_events = get_final_events(state)
+        logger.debug(f"Core processing took {time.time() - process_start_time:.3f}s")
+
+        logger.success(
+            f"Chunked processing complete. Found {len(final_events)} events."
+        )
+        if len(final_events) > 0:
+            logger.info("Final events (first 10):")
+            for i, event in enumerate(final_events[:10]):
+                logger.info(
+                    f"  Event {i+1}: start={event[0]:.6f}s, end={event[1]:.6f}s"
+                )
+
+        logger.warning("Plotting is disabled in chunked processing mode.")

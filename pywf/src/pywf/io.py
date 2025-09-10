@@ -1,6 +1,6 @@
 import os
 import xml.etree.ElementTree as ET
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Generator
 from warnings import warn
 
 import numpy as np
@@ -344,3 +344,113 @@ def rd(
         )
 
     return t, x
+
+
+def rd_chunked(
+    filename: str,
+    chunk_size: int,
+    sampling_interval: Optional[float] = None,
+    data_path: Optional[str] = None,
+    sidecar: Optional[str] = None,
+) -> Generator[Tuple[np.ndarray, np.ndarray], None, None]:
+    """
+    Read waveform binary file in chunks using sidecar XML for parameters.
+
+    This is a generator function that yields chunks of data.
+
+    Parameters
+    ----------
+    filename : str
+        Name of the binary waveform file.
+    chunk_size : int
+        Number of points per chunk.
+    sampling_interval : float, optional
+        Sampling interval in seconds. If None, reads from XML sidecar.
+    data_path : str, optional
+        Path to the data directory.
+    sidecar : str, optional
+        Name of the XML sidecar file.
+
+    Yields
+    ------
+    Tuple[np.ndarray, np.ndarray]
+        Time array (float32) and signal array (float32) for each chunk.
+    """
+    if data_path is not None and not os.path.isabs(filename):
+        fp = os.path.join(data_path, filename)
+    else:
+        fp = filename
+
+    params = get_waveform_params(os.path.basename(fp), data_path, sidecar=sidecar)
+    si = params["sampling_interval"]
+    if si is None:
+        if sampling_interval is not None:
+            si = sampling_interval
+        else:
+            raise RuntimeError(f"Sampling interval could not be determined for file: {fp}.")
+
+    dtype = np.float32
+    if params["signal_format"] == "int16":
+        dtype = np.int16
+    elif params["signal_format"] == "int32":
+        dtype = np.int32
+
+    byteorder = "<" if params["byte_order"] == "LSB" else ">"
+    full_dtype_str = byteorder + dtype().dtype.char
+
+    header_size_bytes = 8
+
+    try:
+        with open(fp, "rb") as f:
+            # Read header
+            header_bytes = f.read(header_size_bytes)
+            if len(header_bytes) < header_size_bytes:
+                logger.warning("Could not read full header from binary file.")
+                return
+
+            import struct
+
+            elsize, record_length_from_header = struct.unpack("<II", header_bytes)
+            logger.success(f"Bin header: data el. size: {elsize} (bytes)")
+            logger.success(
+                f"Bin header: length: {record_length_from_header} ({elsize}-byte nums)"
+            )
+
+            total_points = params.get("signal_hardware_record_length")
+            if total_points is None:
+                total_points = record_length_from_header
+                logger.warning(
+                    f"SignalHardwareRecordLength not found. Using length from header: {total_points} points."
+                )
+            elif total_points != record_length_from_header:
+                logger.warning(
+                    f"SignalHardwareRecordLength ({total_points}) "
+                    f"does not match header record length ({record_length_from_header}) in {fp}. "
+                    "Using header length."
+                )
+                total_points = record_length_from_header
+
+            current_pos = 0
+            while current_pos < total_points:
+                points_to_read = min(chunk_size, total_points - current_pos)
+
+                x_chunk = np.fromfile(f, dtype=full_dtype_str, count=points_to_read)
+
+                if len(x_chunk) == 0:
+                    break
+
+                start_time = current_pos * si
+                num_points = len(x_chunk)
+                t_chunk = np.linspace(
+                    start_time,
+                    start_time + (num_points - 1) * si,
+                    num_points,
+                    dtype=np.float32,
+                )
+
+                yield t_chunk, x_chunk.astype(np.float32)
+
+                current_pos += points_to_read
+
+    except FileNotFoundError:
+        raise FileNotFoundError(f"The file '{fp}' was not found.")
