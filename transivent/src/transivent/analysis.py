@@ -13,8 +13,6 @@ from PIL import Image
 from scipy.ndimage import gaussian_filter1d, median_filter, uniform_filter1d
 from scipy.signal import savgol_filter
 
-from scipy.signal import savgol_filter
-
 from pyosc.plot import OscilloscopePlot
 from pywf import _get_xml_sidecar_path, rd
 
@@ -834,6 +832,138 @@ def create_oscilloscope_plot(
     return plot
 
 
+def initialize_state(config: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Initialise the state dictionary for processing.
+
+    Parameters
+    ----------
+    config : Dict[str, Any]
+        Configuration dictionary containing analysis parameters.
+
+    Returns
+    -------
+    Dict[str, Any]
+        The initial state dictionary.
+    """
+    return {
+        "config": config,
+        "events": [],  # To store lists of events from each chunk
+        "overlap_buffer": {"t": np.array([]), "x": np.array([])},  # For seamless filtering
+        "incomplete_event": None,  # To handle events spanning chunks
+    }
+
+
+def get_final_events(state: Dict[str, Any]) -> np.ndarray:
+    """
+    Extract and finalise the list of detected events from the state.
+
+    Parameters
+    ----------
+    state : Dict[str, Any]
+        The final state dictionary after processing all chunks.
+
+    Returns
+    -------
+    np.ndarray
+        The final, merged list of all detected events.
+    """
+    if not state["events"]:
+        return np.empty((0, 2), dtype=np.float32)
+
+    all_events = np.vstack(state["events"])
+    return merge_overlapping_events(all_events)
+
+
+def process_chunk(
+    data: Tuple[np.ndarray, np.ndarray], state: Dict[str, Any]
+) -> Dict[str, Any]:
+    """
+    Process a single data chunk to find events.
+
+    This function contains the core analysis pipeline. It takes a data chunk
+    and the current state, performs event detection, and returns the updated
+    state along with intermediate results for plotting.
+
+    Parameters
+    ----------
+    data : Tuple[np.ndarray, np.ndarray]
+        A tuple containing the time (t) and signal (x) arrays for the chunk.
+    state : Dict[str, Any]
+        The current state dictionary.
+
+    Returns
+    -------
+    Dict[str, Any]
+        A dictionary containing the updated state and intermediate results:
+        - "state": The updated state dictionary.
+        - "bg_initial": The initial background estimate.
+        - "global_noise": The estimated global noise for the chunk.
+        - "events_initial": The initially detected events.
+        - "bg_clean": The cleaned background estimate.
+        - "events": The final detected events for the chunk.
+    """
+    t, x = data
+    config = state["config"]
+
+    # Extract parameters from config
+    smooth_n = config["smooth_n"]
+    min_event_n = config["min_event_n"]
+    filter_type = config["filter_type"]
+    detection_snr = config["detection_snr"]
+    min_event_keep_snr = config["min_event_keep_snr"]
+    widen_frac = config["widen_frac"]
+    signal_polarity = config["signal_polarity"]
+    filter_order = config["filter_order"]
+
+    # Stage 2: Background Calculation
+    bg_initial = calculate_initial_background(t, x, smooth_n, filter_type)
+    global_noise = estimate_noise(x, bg_initial)
+
+    # Stage 3: Initial Event Detection
+    events_initial = detect_initial_events(
+        t,
+        x,
+        bg_initial,
+        global_noise,
+        detection_snr,
+        min_event_keep_snr,
+        widen_frac,
+        signal_polarity,
+        min_event_n,
+    )
+
+    # Stage 4: Clean Background Calculation
+    bg_clean = calculate_clean_background(
+        t, x, events_initial, smooth_n, bg_initial, filter_type, filter_order
+    )
+
+    # Stage 5: Final Event Detection
+    events = detect_final_events(
+        t,
+        x,
+        bg_clean,
+        global_noise,
+        detection_snr,
+        min_event_keep_snr,
+        widen_frac,
+        signal_polarity,
+        min_event_n,
+    )
+
+    # Update state
+    state["events"].append(events)
+
+    return {
+        "state": state,
+        "bg_initial": bg_initial,
+        "global_noise": global_noise,
+        "events_initial": events_initial,
+        "bg_clean": bg_clean,
+        "events": events,
+    }
+
+
 def process_file(
     name: str,
     sampling_interval: float,
@@ -928,54 +1058,43 @@ def process_file(
         signal_polarity,
     )
 
-    # Stage 2: Background Calculation
-    bg_initial = calculate_initial_background(t, x, smooth_n, filter_type)
-    global_noise = estimate_noise(x, bg_initial)
+    # --- Refactored analysis pipeline ---
+    config = {
+        "sampling_interval": sampling_interval,
+        "smooth_win_t": smooth_win_t,
+        "smooth_win_f": smooth_win_f,
+        "detection_snr": detection_snr,
+        "min_event_keep_snr": min_event_keep_snr,
+        "min_event_t": min_event_t,
+        "widen_frac": widen_frac,
+        "signal_polarity": signal_polarity,
+        "filter_type": filter_type,
+        "filter_order": filter_order,
+        "smooth_n": smooth_n,
+        "min_event_n": min_event_n,
+    }
 
-    # Stage 3: Initial Event Detection
-    bg_time = time.time()
-    logger.debug(f"Background calculation took {bg_time - start_time:.3f}s")
-    events_initial = detect_initial_events(
-        t,
-        x,
-        bg_initial,
-        global_noise,
-        detection_snr,
-        min_event_keep_snr,
-        widen_frac,
-        signal_polarity,
-        min_event_n,
-    )
+    state = initialize_state(config)
+    # For now, process the entire file as a single chunk
+    process_start_time = time.time()
+    results = process_chunk((t, x), state)
+    final_events = get_final_events(results["state"])
+    logger.debug(f"Core processing took {time.time() - process_start_time:.3f}s")
 
-    # Stage 4: Clean Background Calculation
-    bg_clean = calculate_clean_background(
-        t, x, events_initial, smooth_n, bg_initial, filter_type, filter_order
-    )
+    # Extract intermediate results for plotting and analysis
+    bg_initial = results["bg_initial"]
+    global_noise = results["global_noise"]
+    bg_clean = results["bg_clean"]
 
     # Analyze thresholds
     detection_threshold, keep_threshold = analyze_thresholds(
         x, bg_clean, global_noise, detection_snr, min_event_keep_snr, signal_polarity
     )
 
-    # Stage 5: Final Event Detection
-    events = detect_final_events(
-        t,
-        x,
-        bg_clean,
-        global_noise,
-        detection_snr,
-        min_event_keep_snr,
-        widen_frac,
-        signal_polarity,
-        min_event_n,
-    )
-    detection_time = time.time()
-    logger.debug(f"Event detection took {detection_time - bg_time:.3f}s")
-
     # Stage 7: Event Analysis
-    analyze_events(t, x, bg_clean, events, global_noise, signal_polarity)
+    analyze_events(t, x, bg_clean, final_events, global_noise, signal_polarity)
 
-    logger.debug(f"Total processing time: {detection_time - start_time:.3f}s")
+    logger.debug(f"Total processing time: {time.time() - start_time:.3f}s")
 
     # Stage 6: Visualization
     plot = create_oscilloscope_plot(
@@ -983,7 +1102,7 @@ def process_file(
         x,
         bg_initial,
         bg_clean,
-        events,
+        final_events,
         detection_threshold,
         keep_threshold,
         name,
@@ -1002,7 +1121,7 @@ def process_file(
     # Create event plotter
     event_plotter = EventPlotter(
         plot,
-        events,
+        final_events,
         bg_clean=bg_clean,
         global_noise=global_noise,
         y_scale_mode=yscale_mode,
