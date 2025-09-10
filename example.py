@@ -2,7 +2,7 @@ from warnings import warn
 
 import matplotlib as mpl
 
-from transiment import configure_logging, get_waveform_params, process_file
+from transivent import configure_logging, get_waveform_params, process_file
 
 # --- User configuration dictionary ---
 CONFIG = {
@@ -20,7 +20,7 @@ CONFIG = {
     "FILTER_TYPE": "median",  # Filter type: "savgol", "gaussian", "moving_average", "median"
     "FILTER_ORDER": 3,  # Order of the savgol filter for smoothing
     # ---
-    "DATA_PATH": "../data/2025-07-17_bsa/",
+    "DATA_PATH": "../hycav/data/2025-07-17_bsa/",
     "MEASUREMENTS": [
         {
             "data": "RefCurve_2025-07-17_0_065114.Wfm.bin",
