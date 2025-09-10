@@ -43,15 +43,18 @@ def _create_event_mask_numba(t: np.ndarray, events: np.ndarray) -> np.ndarray:
         Boolean mask where True means keep the sample, False means exclude.
     """
     mask = np.ones(len(t), dtype=np.bool_)
+    if len(events) == 0:
+        return mask
 
     for i in range(len(events)):
         t_start = events[i, 0]
         t_end = events[i, 1]
 
-        # Find indices where time is within event bounds
-        for j in range(len(t)):
-            if t_start <= t[j] < t_end:
-                mask[j] = False
+        start_idx = np.searchsorted(t, t_start, side="left")
+        end_idx = np.searchsorted(t, t_end, side="left")
+
+        if start_idx < end_idx:
+            mask[start_idx:end_idx] = False
 
     return mask
 
