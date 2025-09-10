@@ -977,8 +977,35 @@ def process_chunk(
         min_event_n,
     )
 
-    # Update state
-    state["events"].append(events)
+    # --- Handle events spanning chunk boundaries ---
+    # Check for and merge an incomplete event from the previous chunk
+    if state["incomplete_event"] is not None:
+        if len(events) > 0 and events[0, 0] <= t[0]:
+            # The first event in this chunk is a continuation of the previous one.
+            # Merge by updating the end time of the stored incomplete event.
+            state["incomplete_event"][1] = events[0, 1]
+            # Remove the partial event from this chunk's list.
+            events = events[1:]
+        else:
+            # The incomplete event was not continued. It's now complete.
+            # Add it to the final list and clear the state.
+            state["events"].append(np.array([state["incomplete_event"]]))
+            state["incomplete_event"] = None
+
+    # Check if the last event in this chunk is incomplete
+    if len(events) > 0:
+        # An event is incomplete if its end time is at or beyond the end of the
+        # current processing window `t`. `detect_events` extrapolates the end
+        # time, so a check for >= is sufficient.
+        if events[-1, 1] >= t[-1]:
+            # Store the incomplete event for the next chunk.
+            state["incomplete_event"] = events[-1]
+            # Remove it from this chunk's list.
+            events = events[:-1]
+
+    # Update state with the completed events from this chunk
+    if len(events) > 0:
+        state["events"].append(events)
 
     return {
         "state": state,
@@ -1184,6 +1211,11 @@ def process_file(
         for t_chunk, x_chunk in chunk_generator:
             results = process_chunk((t_chunk, x_chunk), state)
             state = results["state"]
+
+        # After processing all chunks, add any remaining incomplete event
+        if state.get("incomplete_event") is not None:
+            state["events"].append(np.array([state["incomplete_event"]]))
+            state["incomplete_event"] = None
 
         final_events = get_final_events(state)
         logger.debug(f"Core processing took {time.time() - process_start_time:.3f}s")
