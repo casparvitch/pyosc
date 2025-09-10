@@ -1056,9 +1056,6 @@ def process_file(
     start_time = time.time()
     logger.info(f"Processing {name} with parameters:")
 
-    # Stage 1: Load Data
-    t, x = load_data(name, sampling_interval, data_path, sidecar, crop)
-
     analysis_dir = data_path[:-1] if data_path.endswith("/") else data_path
     analysis_dir += "_analysis/"
     if not os.path.exists(analysis_dir):

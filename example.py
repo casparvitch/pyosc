@@ -19,7 +19,7 @@ CONFIG = {
     "YSCALE_MODE": "snr",  # y-scale mode for event plotter: 'snr', 'percent' or 'raw'
     "FILTER_TYPE": "median",  # Filter type: "savgol", "gaussian", "moving_average", "median"
     "FILTER_ORDER": 3,  # Order of the savgol filter for smoothing
-    "CHUNK_SIZE": 1_000_000,  # Set to None to disable chunking
+    "CHUNK_SIZE": None,  # Set to None to disable chunking
     # ---
     "DATA_PATH": "../hycav/data/2025-07-17_bsa/",
     "MEASUREMENTS": [
